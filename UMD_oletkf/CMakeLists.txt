@@ -13,6 +13,10 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    set( CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${BIG_ENDIAN} ${BYTERECLEN} ${EXTENDED_SOURCE} ${ALIGNCOM}")
 endif ()
 
+# MAT There is a bug in common_mom4.f90 that cannot handle bounds-checking
+#     For now build with release flags even in debug
+set( CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_RELEASE}")
+
 esma_add_library (${this}
   SRCS ${SRCS}
   INCLUDES ${INC_NETCDF}
