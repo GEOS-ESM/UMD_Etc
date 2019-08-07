@@ -22,7 +22,7 @@ foreach (file ocean_recenter anaice2rst ocean_moments ocean_iau)
    ecbuild_add_executable (
       TARGET ${file}.x 
       SOURCES ${file}.f90 
-      LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+      LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES} Threads::Threads
       )
 endforeach ()
 

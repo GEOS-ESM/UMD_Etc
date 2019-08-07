@@ -28,17 +28,17 @@ target_compile_definitions (${this} PUBLIC _LAPACK_ gmao_intf HAVE_ESMF)
 ecbuild_add_executable (
    TARGET oceanda.x 
    SOURCES letkf.f90 
-   LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+   LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES} Threads::Threads
    )
 
 ecbuild_add_executable (
    TARGET oceanobsop.x 
    SOURCES obsop.f90 
-   LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+   LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES} Threads::Threads
    )
 
 ecbuild_add_executable (
    TARGET oceanobs_nc2bin.x 
    SOURCES oceanobs_nc2bin.f90 
-   LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+   LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES} Threads::Threads
    )
