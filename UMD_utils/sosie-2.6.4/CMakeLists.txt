@@ -30,7 +30,7 @@ foreach (file sosie corr_vect interp_to_line mask_drown_field)
    ecbuild_add_executable (
       TARGET ${file}.x 
       SOURCES src/${file}.f90 
-      LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+      LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES} Threads::Threads
       )
 endforeach ()
 
