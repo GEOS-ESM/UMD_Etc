@@ -1,6 +1,6 @@
 program mk_iau_increments
 !!$ /////////////////////////////////////////////////////////////////////////
-!!$ /**
+!!$ *
 !!$ * Title: mk_iau_incr
 !!$ * ARGUMENT:
 !!$ *        -DO_ANA_INCR                     : compute iau increment and sst relaxation

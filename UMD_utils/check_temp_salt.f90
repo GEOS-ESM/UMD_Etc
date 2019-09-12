@@ -1,6 +1,6 @@
 program check_temp_salt
 !!$ /////////////////////////////////////////////////////////////////////////
-!!$ /**
+!!$ *
 !!$ * Title: check_temp_salt.f90
 !!$ *
 !!$ * Description: Filter out un-physical values
