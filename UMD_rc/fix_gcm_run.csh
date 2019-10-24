@@ -56,11 +56,11 @@ sed "s/ntasks=300/ntasks=1200/g" gcm_run.j > tmp
 mv tmp gcm_run.j
 
 set line1 = '#PBS -N '$EXPID'_RUN'
-set line2 = '#SBATCH --ntasks-per-node=24'
+set line2 = '#SBATCH --ntasks-per-node=36'
 sed "s/${line1}/${line2}/g" gcm_run.j > tmp
 mv tmp gcm_run.j
 
-set line1 = '#SBATCH --constraint=hasw'
+set line1 = '#SBATCH --constraint=sky'
 set line2 = '#SBATCH --job-name='$EXPID
 sed "s/${line1}/${line2}/g" gcm_run.j > tmp
 mv tmp gcm_run.j
