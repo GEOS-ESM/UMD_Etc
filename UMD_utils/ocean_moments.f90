@@ -1,6 +1,6 @@
 program moments
 !!$ /////////////////////////////////////////////////////////////////////////
-!!$ /**
+!!$ *
 !!$ * Title: ocean_moments.f90
 !!$ *
 !!$ * Description: Computes first and second moments of the background and analysis. Filter out un-physical values. Impose minmax limits

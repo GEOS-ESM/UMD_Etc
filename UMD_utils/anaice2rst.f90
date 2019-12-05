@@ -1,6 +1,6 @@
 program anaice2rst 
 !!$ /////////////////////////////////////////////////////////////////////////
-!!$ /**
+!!$ *
 !!$ * Title: anaice2rst.f90
 !!$ *
 !!$ * Description: Based on Bin Zhao's code that converts PIOMASS 12 itd into CICE 5 itd. 
