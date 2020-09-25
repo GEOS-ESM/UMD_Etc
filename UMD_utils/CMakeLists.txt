@@ -18,7 +18,7 @@ esma_add_library (${this}
 
 target_compile_definitions (${this} PUBLIC _LAPACK_ gmao_intf HAVE_ESMF)
 
-foreach (file ocean_recenter anaice2rst ocean_moments ocean_iau)
+foreach (file ocean_recenter anaice2rst ocean_moments ocean_iau rst2socaice)
    ecbuild_add_executable (
       TARGET ${file}.x 
       SOURCES ${file}.f90 
