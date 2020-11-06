@@ -39,7 +39,7 @@ program rst2socaice
 
   !OCEAN GRID
   !==========
-  call read_grid2(ogrid)
+  call read_grid_SOCA(ogrid)
 
 
 !! READ RESTART FILE

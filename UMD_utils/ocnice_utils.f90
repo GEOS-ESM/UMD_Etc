@@ -162,7 +162,7 @@ contains
   end subroutine read_grid
 
   !---------------------------------------------------------------------------------
-  subroutine read_grid2(grid)
+  subroutine read_grid_SOCA(grid)
 
     use netcdf
 
@@ -182,8 +182,6 @@ contains
     call check(nf90_inq_dimid(ncid, 'zaxis_1', levdimid))
     call check(nf90_inquire_dimension(ncid, levdimid, len = grid%Nz))
 
-!    allocate( grid%x(grid%Nx, grid%Ny), grid%y(grid%Nx, grid%Ny), grid%wet(grid%Nx, grid%Ny), grid%area(grid%Nx, grid%Ny) )
-!    allocate( grid%depth(grid%Nz) )
     allocate( grid%x(grid%Nx, grid%Ny), grid%y(grid%Nx, grid%Ny))
     allocate( grid%xq(grid%Nx), grid%yq(grid%Ny))
 
@@ -195,16 +193,10 @@ contains
     call check(nf90_get_var(ncid,varid,grid%xq))
     call check(nf90_inq_varid(ncid,'latq',varid))
     call check(nf90_get_var(ncid,varid,grid%yq))
-!    call check(nf90_inq_varid(ncid,'wet',varid))
-!    call check(nf90_get_var(ncid,varid,grid%wet))
-!    call check(nf90_inq_varid(ncid,'area_T',varid))
-!    call check(nf90_get_var(ncid,varid,grid%area))
-!    call check(nf90_inq_varid(ncid,'zt',varid))
-!    call check(nf90_get_var(ncid,varid,grid%depth))
 
     call check(nf90_close(ncid))
 
-  end subroutine read_grid2
+  end subroutine read_grid_SOCA
 
 
   !---------------------------------------------------------------------------------
@@ -761,60 +753,6 @@ contains
   end subroutine write_soca_seaice_rst3d
 
   !---------------------------------------------------------------------------------
-  subroutine write_soca_seaice_rst2d(fname, varname, VAR, append, ogrid)
-
-    use netcdf
-    implicit none
-
-    integer, parameter :: NDIMS = 3
-    integer :: ncid, varid, dimids2d(3), dimids3d(4)
-    integer :: x_dimid, y_dimid, z_dimid, t_dimid
-    integer              ::  Nt = 1
-!    type (ModelGrid), intent(in)                     :: ogrid      ! Ocean grid
-    type (OceanRaster4SOCA), intent(in)                   :: ogrid      ! Ocean grid
-    logical, intent(in)                              ::  append
-    character*1028, intent(in)                :: fname
-    character*128, intent(in)                :: varname
-    real*8, dimension(:,:), allocatable, intent(in)  :: VAR
-    real*8, dimension(:,:,:), allocatable            :: VARtmp
-
-
-    Nt=1
-
-!    allocate(VARtmp(ogrid%Nx, ogrid%Ny, ogrid%Nz, Nt))
-    allocate(VARtmp(ogrid%IM2, ogrid%JM2, Nt))
-
-    VARtmp(:,:,1)=VAR
-
-    if (append) then
-       call check( nf90_open(fname, NF90_WRITE, ncid) )
-       call check( nf90_inq_dimid(ncid, "time", t_dimid) )
-       call check( nf90_inq_dimid(ncid, "latq", y_dimid) )
-       call check( nf90_inq_dimid(ncid, "lonq", x_dimid) )
-       call check( nf90_inq_dimid(ncid, "zaxis_1", z_dimid) )
-       call check( nf90_redef(ncid) )
-    else
-       call check( nf90_create(fname, NF90_CLOBBER, ncid) )
-!       call check( nf90_def_dim(ncid, "xaxis_1", ogrid%Nx, x_dimid) )
-!       call check( nf90_def_dim(ncid, "yaxis_1", ogrid%Ny, y_dimid) )
-!       call check( nf90_def_dim(ncid, "zaxis_1", ogrid%Nz, z_dimid) )
-       call check( nf90_def_dim(ncid, "time", Nt, t_dimid) )
-       call check( nf90_def_dim(ncid, "latq", ogrid%JM2, y_dimid) )
-       call check( nf90_def_dim(ncid, "lonq", ogrid%IM2, x_dimid) )
-       call check( nf90_def_dim(ncid, "zaxis_1", 5, z_dimid) )
-    end if
-    dimids2d =  (/ x_dimid, y_dimid, t_dimid /)
-
-
-    call check( nf90_def_var(ncid, varname, NF90_DOUBLE, dimids3d, varid) )
-    call check( nf90_enddef(ncid) )
-    call check(nf90_inq_varid(ncid,varname,varid))
-    call check( nf90_put_var(ncid, varid, VARtmp) )
-    call check( nf90_close(ncid) )
-
-  end subroutine write_soca_seaice_rst2d
-
-  !---------------------------------------------------------------------------------
   subroutine write_soca_seaice_rst1dx(fname, varname, VAR, append, ogrid)
 
     use netcdf
@@ -824,7 +762,6 @@ contains
     integer :: ncid, varid, dimids1d(1),dimids2d(3), dimids3d(4)
     integer :: x_dimid, y_dimid, z_dimid, t_dimid
     integer              ::  Nt = 1
-!    type (ModelGrid), intent(in)                     :: ogrid      ! Ocean grid
     type (OceanRaster4SOCA), intent(in)                   :: ogrid      ! Ocean grid
     logical, intent(in)                              ::  append
     character*1028, intent(in)                :: fname
@@ -832,10 +769,8 @@ contains
     real*8, dimension(:), allocatable, intent(in)  :: VAR
     real*8, dimension(:), allocatable            :: VARtmp
 
-
     Nt=1
 
-!    allocate(VARtmp(ogrid%Nx, ogrid%Ny, ogrid%Nz, Nt))
     allocate(VARtmp(ogrid%IM2))
 
     VARtmp(:)=VAR
@@ -849,9 +784,6 @@ contains
        call check( nf90_redef(ncid) )
     else
        call check( nf90_create(fname, NF90_CLOBBER, ncid) )
-!       call check( nf90_def_dim(ncid, "xaxis_1", ogrid%Nx, x_dimid) )
-!       call check( nf90_def_dim(ncid, "yaxis_1", ogrid%Ny, y_dimid) )
-!       call check( nf90_def_dim(ncid, "zaxis_1", ogrid%Nz, z_dimid) )
        call check( nf90_def_dim(ncid, "time", Nt, t_dimid) )
        call check( nf90_def_dim(ncid, "latq", ogrid%JM2, y_dimid) )
        call check( nf90_def_dim(ncid, "lonq", ogrid%IM2, x_dimid) )
@@ -868,7 +800,6 @@ contains
 
   end subroutine write_soca_seaice_rst1dx
 
-
   !---------------------------------------------------------------------------------
   subroutine write_soca_seaice_rst1dy(fname, varname, VAR, append, ogrid)
 
@@ -879,7 +810,6 @@ contains
     integer :: ncid, varid, dimids1d(1),dimids2d(3), dimids3d(4)
     integer :: x_dimid, y_dimid, z_dimid, t_dimid
     integer              ::  Nt = 1
-!    type (ModelGrid), intent(in)                     :: ogrid      ! Ocean grid
     type (OceanRaster4SOCA), intent(in)                   :: ogrid      ! Ocean grid
     logical, intent(in)                              ::  append
     character*1028, intent(in)                :: fname
@@ -889,7 +819,6 @@ contains
 
     Nt=1
 
-!    allocate(VARtmp(ogrid%Nx, ogrid%Ny, ogrid%Nz, Nt))
     allocate(VARtmp(ogrid%JM2))
 
     VARtmp(:)=VAR
@@ -903,9 +832,6 @@ contains
        call check( nf90_redef(ncid) )
     else
        call check( nf90_create(fname, NF90_CLOBBER, ncid) )
-!       call check( nf90_def_dim(ncid, "xaxis_1", ogrid%Nx, x_dimid) )
-!       call check( nf90_def_dim(ncid, "yaxis_1", ogrid%Ny, y_dimid) )
-!       call check( nf90_def_dim(ncid, "zaxis_1", ogrid%Nz, z_dimid) )
        call check( nf90_def_dim(ncid, "time", Nt, t_dimid) )
        call check( nf90_def_dim(ncid, "latq", ogrid%JM2, y_dimid) )
        call check( nf90_def_dim(ncid, "lonq", ogrid%IM2, x_dimid) )
@@ -1332,26 +1258,15 @@ contains
         do I=1,tileinfo%ntiles
              fldout(tileinfo%GIs(I),tileinfo%GJs(I),J) = fldout(tileinfo%GIs(I),tileinfo%GJs(I),J) + fldin(i,J)*tileinfo%wghts(i)
              ws(tileinfo%GIs(I),tileinfo%GJs(I),J) = ws(tileinfo%GIs(I),tileinfo%GJs(I),J) + tileinfo%wghts(i)
-!             print*,tileinfo%GIs(I),tileinfo%GJs(I),tileinfo%wghts(i)
         enddo
       ENDDO
 
       where(ws>0.0_8)
         fldout = fldout / ws
       elsewhere
-        fldout = 1.e15
+!        fldout = 1.e15
+        fldout = 0.0_8  !MJK
       endwhere
-
-!      DO J=1,Ncat
-!        do I=1,tileinfo%ntiles
-!           if(ws(tileinfo%GIs(I),tileinfo%GJs(I),J) > 0.0_8) then
-!             fldout(tileinfo%GIs(I),tileinfo%GJs(I),J) = fldout(tileinfo%GIs(I),tileinfo%GJs(I),J) / ws(tileinfo%GIs(I),tileinfo%GJs(I),J) 
-!           else
-!             fldout(tileinfo%GIs(I),tileinfo%GJs(I),J) = 1.e15
-!           endif
-!        enddo
-!      ENDDO
-
 
       deallocate(ws)
       return
