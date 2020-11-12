@@ -20,7 +20,7 @@ set( CMAKE_Fortran_FLAGS_DEBUG "${CMAKE_Fortran_FLAGS_RELEASE}")
 esma_add_library (${this}
   SRCS ${SRCS}
   INCLUDES ${INC_NETCDF}
-  DEPENDENCIES ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+  DEPENDENCIES ${NETCDF_LIBRARIES} mom6 ${MPI_Fortran_LIBRARIES}
   )
 
 target_compile_definitions (${this} PUBLIC _LAPACK_ gmao_intf HAVE_ESMF)
