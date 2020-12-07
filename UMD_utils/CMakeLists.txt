@@ -35,7 +35,7 @@ if (F2PY_FOUND)
    add_dependencies(read_merra2_bcs ${this})
 endif (F2PY_FOUND)
 
-file (GLOB python_files *.py)
+file (GLOB python_files CONFIGURE_DEPENDS *.py)
 install(
    PROGRAMS ${python_files}
    DESTINATION bin
