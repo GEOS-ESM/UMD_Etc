@@ -3,7 +3,7 @@
 # Order is important; the last matching pattern takes the most
 # precedence.
 
-# Everything in GEOSgcm_GridComp should be owned by the GCM Gatekeepers
+# Everything in UMD_Etc should be owned by the Ocean Team
 * @GEOS-ESM/ocean-team
 
 # The Python Transition Team will own Python files
