@@ -20,17 +20,16 @@ endif ()
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  INCLUDES ${INC_NETCDF}
-  DEPENDENCIES ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES}
+  DEPENDENCIES NetCDF::NetCDF_Fortran MPI::MPI_Fortran
   )
 
 target_compile_definitions (${this} PUBLIC _LAPACK_ gmao_intf HAVE_ESMF)
 
 foreach (file sosie corr_vect interp_to_line mask_drown_field)
    ecbuild_add_executable (
-      TARGET ${file}.x 
-      SOURCES src/${file}.f90 
-      LIBS ${this} ${NETCDF_LIBRARIES} ${MPI_Fortran_LIBRARIES} Threads::Threads
+      TARGET ${file}.x
+      SOURCES src/${file}.f90
+      LIBS ${this} NetCDF::NetCDF_Fortran MPI::MPI_Fortran Threads::Threads
       )
 endforeach ()
 
