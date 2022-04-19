@@ -1,5 +1,5 @@
 esma_add_subdirectories(
-   UMD_oletkf
+#   UMD_oletkf
    UMD_utils
   )
 
