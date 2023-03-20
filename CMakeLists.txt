@@ -1,7 +1,15 @@
+option (BUILD_MIT_OCEAN "BUILD_MIT_OCEAN is turned off by default" OFF) #OFF by default
+if ( NOT BUILD_MIT_OCEAN )
 esma_add_subdirectories(
    UMD_oletkf
    UMD_utils
   )
+else()
+esma_add_subdirectories(
+#   UMD_oletkf
+   UMD_utils
+  )
+endif()
 
 # NOTE There is no real "make" to do in UMD_rc, scripts, or
 #      util_hindcast. They are sets of scripts and files. 
