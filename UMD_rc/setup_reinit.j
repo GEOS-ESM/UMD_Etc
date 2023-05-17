@@ -182,7 +182,7 @@ chmod +x $FILE
 #                        Link Boundary Datasets
 #######################################################################
 
-setenv BCSDIR    /discover/nobackup/ltakacs/bcs/Ganymed-4_0/Ganymed-4_0_Reynolds
+setenv BCSDIR    /discover/nobackup/projects/gmao/bcs_shared/legacy_bcs/bcs/Ganymed-4_0/Ganymed-4_0_Reynolds
 setenv CHMDIR    /discover/nobackup/projects/gmao/share/dao_ops/fvInput_nc3
 setenv BCRSLV    ${ATMOStag}_DE0360xPE0180
 setenv DATELINE  DC
