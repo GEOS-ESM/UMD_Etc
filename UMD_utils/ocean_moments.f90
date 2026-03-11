@@ -5,24 +5,24 @@ program moments
 !!$ *
 !!$ * Description: Computes first and second moments of the background and analysis. Filter out un-physical values. Impose minmax limits
 !!$ *              on increment.
-!!$ *     
-!!$ * Options:  
+!!$ *
+!!$ * Options:
 !!$ *              -do_ild : Boolean. If true, use the isothermal layer depth from the background to filter the temperature increment.
 !!$ *                                Default: .false.
 !!$ *              -do_temp_incr  : Boolean. If true, apply the temp increment.
 !!$ *                                Default: .true.
 !!$ *              -do_salt_incr  : Boolean. If true, apply the temp increment.
 !!$ *                                Default: .true.
-!!$ * Input:              
+!!$ * Input:
 !!$ *              Ensemble Backgrounds: ./bkg/
 !!$ *              Ensemble Analysis: ./ana/
 !!$ *              Analysis grid: ./grid_spec.nc
-!!$ * Output:              
+!!$ * Output:
 !!$ *              Ensemble Increments: ./incr/
 !!$ *              Ensemble of ReAnalysed field: ./ana/
-!!$ *              First and second moments of bkg, ana and incr: ./mean_ana_restart/             
-!!$ * Example:             
-!!$ *             
+!!$ *              First and second moments of bkg, ana and incr: ./mean_ana_restart/
+!!$ * Example:
+!!$ *
 
   use mpi
   use netcdf
@@ -50,7 +50,7 @@ program moments
   integer :: varid, varidvi, varidlon, varidlat
   character*128 :: varname
 
-  real*4, allocatable, dimension(:,  :, :) ::   Tb, Sb, ICEb               ! Background 
+  real*4, allocatable, dimension(:,  :, :) ::   Tb, Sb, ICEb               ! Background
   real*4, allocatable, dimension(:,  :, :) ::   Ta, Sa, ICEa               ! Analysis
   real*4, allocatable, dimension(:,  :, :) ::   Tincr, Sincr, ICEincr      ! Increment
 
@@ -61,8 +61,8 @@ program moments
 
   real*4    :: Tf, efold, dt
   real*4    :: D0 = 1500.0     ! e-folding scale, used to limit increment size at depth
-  real*4    :: Sincr_max = 5.0 ! Max absolute value for the salinity increment  
-  real*4    :: Tincr_max = 10.0 ! Max absolute value for the temperature increment  
+  real*4    :: Sincr_max = 5.0 ! Max absolute value for the salinity increment
+  real*4    :: Tincr_max = 10.0 ! Max absolute value for the temperature increment
 
   character*300                          :: buffer, command, arg1, arg2
   integer :: ncid, dimids2d(2), cat_dimid, catp1_dimid, tile_dimid, dimids1d(1)
@@ -72,7 +72,7 @@ program moments
   logical                              ::  append
 
   !MPI vars
-  integer                                        :: ierror, myrank, numprocs, Ns, N2d
+  integer                                        :: ierror, myrank, numprocs, Ns, N2d, iargc
   integer, parameter                             :: root=0
   real, allocatable, dimension (:)               :: meanT, meanS, meanICE, meanSLV, sigT, sigS, sigICE, SUMX, sigTb, sigSb
   real, allocatable, dimension (:)               :: meanTi, meanSi, meanICEi, meanSLVi
@@ -105,16 +105,16 @@ program moments
      D0 = 20.0
   end if
 
-  if (do_temp_incr) then 
-     alfa_T = 1.0 
+  if (do_temp_incr) then
+     alfa_T = 1.0
   else
-     alfa_T = 0.0 
+     alfa_T = 0.0
   end if
 
-  if (do_salt_incr) then 
-     alfa_S = 1.0 
+  if (do_salt_incr) then
+     alfa_S = 1.0
   else
-     alfa_S = 0.0 
+     alfa_S = 0.0
   end if
 
   !OCEAN GRID
@@ -138,7 +138,7 @@ program moments
   varname = 'eta_t'
   call readrst2d(bkg_fname, varname, SLVb)
 
-  ! AICE, HICE, HSNO, ... stored in ocean_velocity.res.nc! 
+  ! AICE, HICE, HSNO, ... stored in ocean_velocity.res.nc!
   bkg_fname=''
   write(bkg_fname(1:29),'(A4,I3.3,A22)') 'bkg/',myrank+1,'/ocean_velocity.res.nc'
   allocate(ICEb(ogrid%Nx, ogrid%Ny, ogrid%Nz))
@@ -157,7 +157,7 @@ program moments
   call readoceanrst(ana_fname, varname, ogrid, Sa)
 
   ! SLV
-  ana_fname=''  
+  ana_fname=''
   write(ana_fname(1:31),'(A4,I3.3,A24)') 'ana/',myrank+1,'/ocean_barotropic.res.nc'
   allocate(SLVa(ogrid%Nx, ogrid%Ny))
   varname = 'eta_t'
@@ -182,7 +182,7 @@ program moments
   allocate(ICEincr(ogrid%Nx, ogrid%Ny, ogrid%Nz))
   allocate(SLVincr(ogrid%Nx, ogrid%Ny))
 
-  if (myrank == root) then 
+  if (myrank == root) then
      command = "mkdir -p incr"
      call execute_command_line (command, exitstat=i)
   end if
@@ -191,7 +191,7 @@ program moments
   write(incr_fname(1:31),'(A5,I3.3,A23)') 'incr/',myrank+1,'/ocean_temp_salt.res.nc'
   write(incr_dir(1:8),'(A5,I3.3)') 'incr/',myrank+1
   command = "mkdir -p "//trim(incr_dir)
-  call execute_command_line (command, exitstat=i)  
+  call execute_command_line (command, exitstat=i)
   Tincr = Ta - Tb
   Sincr = Sa - Sb
   ICEincr = ICEa - ICEb
@@ -208,7 +208,7 @@ program moments
   Tincr = Tincr_max * tanh( Tincr/Tincr_max ) ! limit the increment to ]-Tincr_max, Tincr_max[
   Ta = Tb + Tincr
 
-  Sincr = Sincr_max * tanh( Sincr/Sincr_max ) ! Constrain the increment smoothly in ]-Sincr_max, Sincr_max[ 
+  Sincr = Sincr_max * tanh( Sincr/Sincr_max ) ! Constrain the increment smoothly in ]-Sincr_max, Sincr_max[
                                               ! Probably should do the same for temperature
   Sa = Sb + Sincr
 
@@ -216,11 +216,11 @@ program moments
   !=============
   varname='temp'
   append=.false.
-  call write_ocean_state(incr_fname, varname, Tincr, append, ogrid)  
+  call write_ocean_state(incr_fname, varname, Tincr, append, ogrid)
   varname='salt'
   append=.true.
   call write_ocean_state(incr_fname, varname, Sincr, append, ogrid)
-  
+
   varname='slv'
   append=.true.
   call write_ocean_state2d(incr_fname, varname, SLVincr, append, ogrid)
@@ -239,8 +239,8 @@ program moments
   call write_ocean_state(ana_fname, varname, Ta, append, ogrid)
   varname='salt'
   append=.true.
-  call write_ocean_state(ana_fname, varname, Sa, append, ogrid)  
-  
+  call write_ocean_state(ana_fname, varname, Sa, append, ogrid)
+
   ana_fname=''
   write(ana_fname(1:18),'(A4,I3.3,A11)') 'ana/',myrank+1,'/sea-ice.nc'
   varname='ice'
@@ -275,55 +275,55 @@ program moments
 
   if (myrank==root) then
      command = "mkdir mean_ana_restart"
-     call execute_command_line (command, exitstat=i)       
+     call execute_command_line (command, exitstat=i)
      mean_fname='mean_ana_restart/ocean_temp_salt.res.nc'
      varname='temp'
      append=.false.
      allocate(DUMVAR(ogrid%Nx, ogrid%Ny, ogrid%Nz))
      DUMVAR=reshape(meanT,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
      varname='salt'
      append=.true.
      DUMVAR=reshape(meanS,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
 
      mean_fname='mean_ana_restart/slv.nc'
      varname='SLVa'
      append=.false.
-     allocate(DUMVAR2d(ogrid%Nx, ogrid%Ny))     
+     allocate(DUMVAR2d(ogrid%Nx, ogrid%Ny))
      DUMVAR2d=reshape(meanSLV,(/ogrid%Nx, ogrid%Ny/))
-     call write_ocean_state2d(mean_fname, varname, DUMVAR2d, append, ogrid)  
+     call write_ocean_state2d(mean_fname, varname, DUMVAR2d, append, ogrid)
      varname='SLVb'
      append=.true.
      DUMVAR2d=reshape(meanSLV-meanSLVi,(/ogrid%Nx, ogrid%Ny/))
-     call write_ocean_state2d(mean_fname, varname, DUMVAR2d, append, ogrid)  
+     call write_ocean_state2d(mean_fname, varname, DUMVAR2d, append, ogrid)
 
      mean_fname='mean_ana_restart/sea-ice.nc'
      varname='ice'
      append=.false.
      DUMVAR=reshape(meanICE,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
 
      mean_fname='mean_ana_restart/incr.nc'
      varname='temp'
      append=.false.
      DUMVAR=reshape(meanTi,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
      varname='salt'
      append=.true.
      DUMVAR=reshape(meanSi,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
      varname='ice'
      append=.true.
      DUMVAR=reshape(meanICEi,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
      varname='SLV'
      append=.true.
      DUMVAR2d=reshape(meanSLVi,(/ogrid%Nx, ogrid%Ny/))
-     call write_ocean_state2d(mean_fname, varname, DUMVAR2d, append, ogrid)  
+     call write_ocean_state2d(mean_fname, varname, DUMVAR2d, append, ogrid)
   end if
 
-  ! Compute ana std 
+  ! Compute ana std
   !============================
   call mpi_barrier(MPI_COMM_WORLD,ierror)
   allocate(sigT(Ns), sigS(Ns), SUMX(Ns))
@@ -361,20 +361,20 @@ program moments
      varname='temp_ana'
      append=.false.
      DUMVAR=reshape(sigT,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
      varname='salt_ana'
      append=.true.
      DUMVAR=reshape(sigS,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
 
      varname='temp_bkg'
      append=.true.
      DUMVAR=reshape(sigTb,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
      varname='salt_bkg'
      append=.true.
      DUMVAR=reshape(sigSb,(/ogrid%Nx, ogrid%Ny, ogrid%Nz/))
-     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)  
+     call write_ocean_state(mean_fname, varname, DUMVAR, append, ogrid)
   end if
 
   call MPI_FINALIZE(ierror)

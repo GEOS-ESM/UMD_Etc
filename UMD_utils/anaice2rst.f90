@@ -1,33 +1,33 @@
-program anaice2rst 
+program anaice2rst
 !!$ /////////////////////////////////////////////////////////////////////////
 !!$ *
 !!$ * Title: anaice2rst.f90
 !!$ *
-!!$ * Description: Based on Bin Zhao's code that converts PIOMASS 12 itd into CICE 5 itd. 
+!!$ * Description: Based on Bin Zhao's code that converts PIOMASS 12 itd into CICE 5 itd.
 !!$ *              The core philosophy is to keep the background itd and conserve the Enthalpy per unit volume.
-!!$ *     
-!!$ * Options:  
-!!$ *              -rst     : File name for saltwater restart. 
-!!$ *                         Default: Salt_fname  = 'saltwater_internal_rst.nc4' 
-!!$ *              -orst    : File name for ocean temp salt restart. 
-!!$ *                         Default: Ocean_fname  = 'ocean_temp_salt.res.nc' 
+!!$ *
+!!$ * Options:
+!!$ *              -rst     : File name for saltwater restart.
+!!$ *                         Default: Salt_fname  = 'saltwater_internal_rst.nc4'
+!!$ *              -orst    : File name for ocean temp salt restart.
+!!$ *                         Default: Ocean_fname  = 'ocean_temp_salt.res.nc'
 !!$ *              -ana     : File name containing analysis, or sea-ice state on ocean grid.
 !!$ *                         variables in the file should be AICE and/or HICE and/or HSNO on the ocean native grid.
-!!$ *                         Default: Ana_fname  = 'ana.nc4'    
+!!$ *                         Default: Ana_fname  = 'ana.nc4'
 !!$ *              -ana_fmt : Format of Ana_fname, 'oletkf' or 'regular'
 !!$ *                         Default: ana_fmt='regular'
 !!$ *              -do_aice : DO_AICE_ANA, Read AICE, .true or .false.  !!!!! Assumes analysis file contains logit(AICE)
 !!$ *              -do_hice : DO_HICE_ANA,   "  HICE,   "
 !!$ *              -do_hsno : DO_HSNO_ANA,   "  HSNO,   "
-!!$ *              -do_all_1st : DO_ALL_1ST, .true or .false. !! apply increment starting from 1st category; Default(.false.) 
-!!$ *               NOTE: if true, this scheme creates some biases because ice may not be present in the 1st category when removed  
-!!$ *              -hi_new : real, new ice thickness when DO_ALL_1ST is .true.; 
-!!$ *                        Default(0.5m)  
-!!$ *              
-!!$ * Output:              
+!!$ *              -do_all_1st : DO_ALL_1ST, .true or .false. !! apply increment starting from 1st category; Default(.false.)
+!!$ *               NOTE: if true, this scheme creates some biases because ice may not be present in the 1st category when removed
+!!$ *              -hi_new : real, new ice thickness when DO_ALL_1ST is .true.;
+!!$ *                        Default(0.5m)
+!!$ *
+!!$ * Output:
 !!$ *              saltwater_internal_rst_OUT.nc4
-!!$ * Example:             
-!!$ *             
+!!$ * Example:
+!!$ *
 !!$ *             saltwater_internal_rst_OUT is a copy of saltwater_internal_rst
 !!$ *             ./anaice2rst.x saltwater_internal_rst_OUT saltwater_internal_rst ana-20030407.nc .T. .F. .F.
 !!$ *                 will read AICE and rebalance CICE's restart, result written in saltwater_internal_rst_OUT
@@ -52,8 +52,8 @@ program anaice2rst
   logical       :: DO_HSNO_ANA = .true.
   logical       :: DO_SKIN_FLUSH = .false.
   logical       :: DO_ALL_1ST  = .false.
-  logical       :: DO_ADHOC_TW = .false. 
-  logical       :: DO_CONS_VOL = .false. 
+  logical       :: DO_ADHOC_TW = .false.
+  logical       :: DO_CONS_VOL = .false.
   logical       :: oob
   character*128 :: ana_fmt = 'regular' ! 'oletkf' or 'regular'
 
@@ -61,11 +61,11 @@ program anaice2rst
   integer :: varid, varidvi, varidlon, varidlat
   character*128 :: varname
 
-  real*8, allocatable, dimension(:)    :: tmpx 
+  real*8, allocatable, dimension(:)    :: tmpx
   real*8, allocatable, dimension(:, :) :: aicen, vicen ,vsnon
   real*4, allocatable, dimension(:,:)    :: Tw  ! Skin temperature (under ice) [K]
   real*4, allocatable, dimension(:,:)    :: Sw  ! Skin salinity (under ice)    [psu]
-  real*4, allocatable, dimension(:,:)    :: Slmask  
+  real*4, allocatable, dimension(:,:)    :: Slmask
 
   real*8, allocatable, dimension(:, :, :) ::   eicen    ! energy of melting for each ice layer  (J/m^2)
   real*8, allocatable, dimension(:, :, :) ::   esnon    ! energy of melting for each snow layer (J/m^2)
@@ -76,18 +76,18 @@ program anaice2rst
   real*4, allocatable, dimension(:,  :, :) :: Socean      ! 3d ocean salinity [PSU]
   real*4, allocatable, dimension(:,  :, : , :)    :: DUMVAR
 
-  real*4, allocatable, dimension(:) :: madjice 
+  real*4, allocatable, dimension(:) :: madjice
   real*4, allocatable, dimension(:, :) :: madjiceij, Toij
 
 
-  real*4            :: beta                    ! Scaling of the background field 
-  real*4            :: mass_incr               ! Sea-ice mass increment 
+  real*4            :: beta                    ! Scaling of the background field
+  real*4            :: mass_incr               ! Sea-ice mass increment
   real*4            :: sic_bkg                 ! Background ice Fraction
   real*4            :: sit_bkg                 ! Background ice thickness
   real*4            :: snd_bkg                 ! Background snow depth
   real*8            :: sic_incr                ! Ice Fraction increment
   real*4            :: sic_incr_max = 0.9      ! Max ice Fraction increment
-  real*4            :: Tliquid                 ! Background Temperature of liquid ocean 
+  real*4            :: Tliquid                 ! Background Temperature of liquid ocean
   real*4            :: Tf                      ! Freeze temp
   real*4            :: Tincr                   ! Tw increment
   real*4, parameter :: Tincr_max = 1.0         ! Max Tw increment
@@ -135,11 +135,11 @@ program anaice2rst
   integer              :: tilemax
 
   real*4               :: hinew = 0.5             ! new ice thickness generated
-  real*8               :: hi, hs, qi0, incr_remain 
-  real*4               :: mass1, mass2 
+  real*8               :: hi, hs, qi0, incr_remain
+  real*4               :: mass1, mass2
   real*8               :: qin_save(nilyr), qsn_save(nslyr)
   real (kind=real_kind), dimension(nilyr+1) :: &
-                       salin       , & ! salinity (ppt)   
+                       salin       , & ! salinity (ppt)
                        Tmlt            ! melting temp, -depressT * salinity
                          ! nilyr + 1 index is for bottom surface
   real (kind=dbl_kind)    :: zn       ! normalized ice thickness
@@ -156,7 +156,7 @@ program anaice2rst
 
 
   character*300                          :: buffer, command, arg1, arg2
-  integer :: ncid, dimids2d(2), cat_dimid, catp1_dimid, tile_dimid, dimids1d(1)
+  integer :: ncid, dimids2d(2), cat_dimid, catp1_dimid, tile_dimid, dimids1d(1), iargc
 
   type (ModelGrid)                      :: ogrid     ! Ocean grid, tripolar
   type (OceanRaster)                    :: oraster   ! Ocean tiles
@@ -228,7 +228,7 @@ program anaice2rst
 
   print *,'ocean tiles area = ',sum(oraster%areas)
   print *,'ocean grid area = ',sum(ogrid%wet*ogrid%area)/(1000.0**2)
-  
+
   !-----------------------------------------------------------------
   ! vectors identifying first and last layer in each category
   !-----------------------------------------------------------------
@@ -278,28 +278,28 @@ program anaice2rst
      call readseaicerst(Ana_fname, varname, ogrid, ana_fmt, sic_ana)
      where (sic_ana<0.0)
         sic_ana=0.0
-     end where     
+     end where
      where (sic_ana>=1.0-tiny)
         sic_ana=1.0-tiny
-     end where     
+     end where
   end if
-  if (DO_HICE_ANA) then     
+  if (DO_HICE_ANA) then
      print *,'Rebalancing state for sea-ice thickness'
      allocate(sit_ana(ogrid%Nx, ogrid%Ny))
      varname = 'HICE'
      call readseaicerst(Ana_fname, varname, ogrid, ana_fmt, sit_ana)
      where (sit_ana<0.0)
         sit_ana=0.0
-     end where     
+     end where
   end if
-  if (DO_HSNO_ANA) then     
+  if (DO_HSNO_ANA) then
      print *,'Rebalancing state for snow depth over sea-ice'
      allocate(snd_ana(ogrid%Nx, ogrid%Ny))
      varname = 'HSNO'
      call readseaicerst(Ana_fname, varname, ogrid, ana_fmt, snd_ana)
      where (snd_ana<0.0)
         snd_ana=0.0
-     end where     
+     end where
   end if
 
   !READ SALTWATER RESTART
@@ -349,21 +349,21 @@ program anaice2rst
   varname =  'temp'
   allocate(Tocean(ogrid%Nx, ogrid%Ny, ogrid%Nz))
   call readoceanrst(Ocean_fname, varname, ogrid, Tocean)
-  
+
   varname =  'salt'
   allocate(Socean(ogrid%Nx, ogrid%Ny, ogrid%Nz))
   call readoceanrst(Ocean_fname, varname, ogrid, Socean)
-  
+
   !ANALYSIS UPDATE
   !===============
-  ! The following conserves the background ice thickness distribution 
-  ! and rebalances the ice/snow internal energy so that Enthalpy/unit volume 
-  ! is conserved. 
+  ! The following conserves the background ice thickness distribution
+  ! and rebalances the ice/snow internal energy so that Enthalpy/unit volume
+  ! is conserved.
   ! "Craming" the analysis in the background restart is done incrementally:
   !    1 - Update aicen                  => balance ice and snow internal E
   !    2 - If ice thickness was analyzed => balance ice E
   !    3 - If snow depth was analyzed    => balance snow E
-  !    
+  !
 
   allocate(sst_incr(ogrid%Nx, ogrid%Ny))
   do i=1,oraster%Ntiles
@@ -378,30 +378,30 @@ program anaice2rst
   if(DO_SKIN_FLUSH) then
      do i=1,oraster%Ntiles
      ! first flush skin layer with MOM top layer T & S to avoid
-     ! initial shock 
+     ! initial shock
        if(i==targt) then
              print*, 'tripole i,j: ', oraster%GIs(i), oraster%GJs(i)
-             print*, 'before flushing: ', Tw(i,1), Tocean(oraster%GIs(i), oraster%GJs(i),1) 
+             print*, 'before flushing: ', Tw(i,1), Tocean(oraster%GIs(i), oraster%GJs(i),1)
              print*, 'before flushing: ', Sw(i,1)
        endif
        if(SLMASK(i,1) < 0.5) then ! only flush when it is a MOM tile
-          SW(i,1) = Socean(oraster%GIs(i), oraster%GJs(i),1) 
-          TW(i,1) = Tocean(oraster%GIs(i), oraster%GJs(i),1)+273.15 
-       endif  
+          SW(i,1) = Socean(oraster%GIs(i), oraster%GJs(i),1)
+          TW(i,1) = Tocean(oraster%GIs(i), oraster%GJs(i),1)+273.15
+       endif
        if(i==targt) then
-             print*, 'after flushing: ', Tw(i,1), Tocean(oraster%GIs(i), oraster%GJs(i),1) 
+             print*, 'after flushing: ', Tw(i,1), Tocean(oraster%GIs(i), oraster%GJs(i),1)
              print*, 'after flushing: ', Sw(i,1)
        endif
      enddo
-  endif  
+  endif
 
   mass_incr = 0.0
   mass1     = 0.0
   do i=1,oraster%Ntiles
-      if(SLMASK(i,1) > 0.5) cycle ! no blending for salt lakes 
-      if(SLMASK(i,1) < 0.5) then ! only count MOM tiles 
+      if(SLMASK(i,1) > 0.5) cycle ! no blending for salt lakes
+      if(SLMASK(i,1) < 0.5) then ! only count MOM tiles
         mass1 = mass1 + oraster%areas(i)*(rho_ice*sum(vicen(i,:))+rho_sno*sum(vsnon(i,:)))
-      endif   
+      endif
 
      ! SEA-ICE FRACTION
      !-----------------
@@ -416,15 +416,15 @@ program anaice2rst
               sic_ana(oraster%GIs(i), oraster%GJs(i)) > 1.0+puny) cycle
            !safety check
            oob = .false.
-           do n=1, ncat 
+           do n=1, ncat
                if(aicen(i,n+1) > puny) then
                  hi = vicen(i,n) / aicen(i,n+1)
                  if(hi > hin_max(n) .or. hi < hin_max(n-1)) then
-                    oob = .true.   
-                    exit 
-                 endif 
+                    oob = .true.
+                    exit
+                 endif
                endif
-           enddo 
+           enddo
            if(oob) cycle
            Tf = -depressT * Sw(i,1) ! Linear liquidus approximation (Bitz and Lipscomb, 1999)
            !if(sic_bkg>0.0) then
@@ -433,11 +433,11 @@ program anaice2rst
                    call  save_old_state(aicen(i,:),vicen(i,:),vsnon(i,:),&
                                         eicen(i,:,:),esnon(i,:,:), &
                                         nilyr, nslyr, 2, 1, &
-                                        hi, hs, qin_save, qsn_save)  
+                                        hi, hs, qin_save, qsn_save)
                    call  restore_ice_state(aicen(i,:),vicen(i,:),vsnon(i,:),&
                                           eicen(i,:,:),esnon(i,:,:), &
                                           nilyr, nslyr, 2, 1, sic_incr, &
-                                          hi, hs, qin_save, qsn_save, himin=hinew)  
+                                          hi, hs, qin_save, qsn_save, himin=hinew)
                 else
                    aicen(i,2) = aicen(i,2) + sic_incr
                    vicen(i,1) = aicen(i,2) * hinew
@@ -451,25 +451,25 @@ program anaice2rst
                    enddo
                 endif
               else ! remove ice
-                  incr_remain = sic_incr 
-                  do n=2, ncat+1 
+                  incr_remain = sic_incr
+                  do n=2, ncat+1
                      !if(incr_remain < 0.0) then
                         if(aicen(i,n) > puny) then
                           call  save_old_state(aicen(i,:),vicen(i,:),vsnon(i,:),&
                                                eicen(i,:,:),esnon(i,:,:), &
                                                nilyr, nslyr, n, n-1, &
-                                               hi, hs, qin_save, qsn_save)  
+                                               hi, hs, qin_save, qsn_save)
                            incr_remain = aicen(i,n) + sic_incr
                            if(i==targt) then
-                             print*, 'during processing: '   
-                             print*, i, n,' incr = ', sic_incr 
-                             print*, i, n,' remain incr = ', incr_remain 
-                           endif  
+                             print*, 'during processing: '
+                             print*, i, n,' incr = ', sic_incr
+                             print*, i, n,' remain incr = ', incr_remain
+                           endif
                            if(incr_remain > puny) then
                               call  restore_ice_state(aicen(i,:),vicen(i,:),vsnon(i,:),&
                                                       eicen(i,:,:),esnon(i,:,:), &
                                                       nilyr, nslyr, n, n-1, sic_incr, &
-                                                      hi, hs, qin_save, qsn_save)  
+                                                      hi, hs, qin_save, qsn_save)
                               exit
                            else
                               ! all ice in category n is gone
@@ -478,25 +478,25 @@ program anaice2rst
                               vsnon(i,n-1) = 0.0
                               eicen(i,:,n-1) = 0.0
                               esnon(i,:,n-1) = 0.0
-                           endif 
-                        endif 
-                        sic_incr = incr_remain 
+                           endif
+                        endif
+                        sic_incr = incr_remain
                   enddo ! n
                 endif ! generate ice or not
-           !endif 
+           !endif
            aicen(i,1) = 1.0 - sum( aicen(i,2:) )       ! Re-compute ocean fraction
            if(i==targt) then
-              print*, 'after processing: '  
+              print*, 'after processing: '
               print*, i, oraster%lons(i), oraster%lats(i)
               print*, aicen(i,1), aicen(i,2), aicen(i,3)
               print*, aicen(i,4), aicen(i,5), aicen(i,6)
-           endif  
+           endif
         else  ! .not. DO_ALL_1ST
         if (sic_bkg>0.0) then
            beta = real( (sic_ana(oraster%GIs(i), oraster%GJs(i))+tiny)/sic_bkg ,kind=real_kind)
            beta = min(beta, beta_max)
            !print*, beta
-!           if(beta <= beta_max) then 
+!           if(beta <= beta_max) then
               if(i==targt) then
                  print*, 'beta : ', beta
                  print*, 'before scaling vicen: ', (vicen(i,n), n=1,ncat)
@@ -504,15 +504,15 @@ program anaice2rst
               aicen(i,:) = beta * aicen(i,:)         ! Re-adjust background fraction to match analysis
               mass_incr = mass_incr + (beta-1.0)*oraster%areas(i)*( rho_ice*sum( vicen(i,:) )  + rho_sno*sum( vsnon(i,:) ) ) ! Update sea-ice mass increment
                                                                                                                        ! due to sea-ice fraction analysis
-                  vicen(i,:)   = beta * vicen(i,:)       ! Adjust volume of ice 
+                  vicen(i,:)   = beta * vicen(i,:)       ! Adjust volume of ice
                   vsnon(i,:)   = beta * vsnon(i,:)       ! and snow accordingly.
-                  eicen(i,:,:) = beta * eicen(i,:,:)     ! This way of rebalancing the ice 
+                  eicen(i,:,:) = beta * eicen(i,:,:)     ! This way of rebalancing the ice
                   esnon(i,:,:) = beta * esnon(i,:,:)     ! and snow internal energy conserves the enthalpy per unit volume
               if(i==targt) then
                  print*, 'after scaling vicen: ', (vicen(i,n), n=1,ncat)
               endif
         elseif (sic_ana(oraster%GIs(i), oraster%GJs(i)) > puny) then
-           !beta=1.0 
+           !beta=1.0
            if(i==targt) then
                  print*, 'sic_ana : ', sic_ana(oraster%GIs(i), oraster%GJs(i))
                print*, 'in step C before vicen: ', (vicen(i,n), n=1,ncat)
@@ -534,28 +534,28 @@ program anaice2rst
         end if
         aicen(i,1) = 1.0 - sum( aicen(i,2:) )       ! Re-compute ocean fraction
 
-        end if ! DO_ALL_1ST       
+        end if ! DO_ALL_1ST
 
 
         Tf = -0.054 * Sw(i,1) + 273.15
 
         if( DO_ADHOC_TW ) then
            if ( sum( aicen(i,2:) ) > 0.01 .and. sic_bkg < 0.01 ) then
-              Tw(i,1) = Tf 
+              Tw(i,1) = Tf
               madjice(i) = oraster%wghts(i)
               madjiceij(oraster%GIs(i), oraster%GJs(i)) = &
                         madjiceij(oraster%GIs(i), oraster%GJs(i)) + madjice(i)
               Toij(oraster%GIs(i), oraster%GJs(i)) = &
                         Toij(oraster%GIs(i), oraster%GJs(i)) + madjice(i)*Tw(i,1)
-           endif 
+           endif
            if ( sum( aicen(i,2:) ) < 0.01 .and. sic_bkg > 0.01 ) then
-              Tw(i,1) = Tf + 0.5 
+              Tw(i,1) = Tf + 0.5
               madjice(i) = oraster%wghts(i)
               madjiceij(oraster%GIs(i), oraster%GJs(i)) = &
                         madjiceij(oraster%GIs(i), oraster%GJs(i)) + madjice(i)
               Toij(oraster%GIs(i), oraster%GJs(i)) = &
                         Toij(oraster%GIs(i), oraster%GJs(i)) + madjice(i)*Tw(i,1)
-           endif 
+           endif
         else
         ! the following adjustment should be done regardless
         if ( (sum( aicen(i,2:) ) > 0.01) .and. (sic_bkg>0.01) .and. (sum( aicen(i,2:))<0.99) .and. (sic_bkg<0.99) ) then
@@ -563,7 +563,7 @@ program anaice2rst
            if(i==targt) then
               print*, Tf, Tliquid, Tw(i,1), sic_bkg
            endif
-           Tincr = sum( aicen(i,2:) ) * Tf + ( 1.0 - sum( aicen(i,2:) ) ) * Tliquid - Tw(i,1) 
+           Tincr = sum( aicen(i,2:) ) * Tf + ( 1.0 - sum( aicen(i,2:) ) ) * Tliquid - Tw(i,1)
            Tincr = Tincr_max * tanh( Tincr/Tincr_max ) ! limit the increment to ]-Tincr_max, Tincr_max[
            Tw(i,1) = Tw(i,1) + Tincr
            !Tw(i,1) = sum( aicen(i,2:) ) * Tf + ( 1.0 - sum( aicen(i,2:) ) ) * Tliquid
@@ -576,18 +576,18 @@ program anaice2rst
            Toij(oraster%GIs(i), oraster%GJs(i)) = &
                         Toij(oraster%GIs(i), oraster%GJs(i)) + madjice(i)*Tw(i,1)
            !sst_incr(oraster%GIs(i), oraster%GJs(i)) = Tincr    ! Save to diagnoze
-           !Tocean(oraster%GIs(i), oraster%GJs(i), 1) = Tw(i,1) - 273.15 ! Zero out ice-ocean fluxes where sea-ice is present, investigate propagating the 
+           !Tocean(oraster%GIs(i), oraster%GJs(i), 1) = Tw(i,1) - 273.15 ! Zero out ice-ocean fluxes where sea-ice is present, investigate propagating the
                                                                         ! increment further down the water column
 
            !Tw(i,1) = sum( aicen(i,2:) ) * Tf + ( 1.0 - sum( aicen(i,2:) ) ) * Tliquid  ! Adjust skin temperature below sea-ice
            !write(55,*)Tw(i,1)-273.15, Tliquid - 273.15, Tf - 273.15, sic_bkg, Tincr, sum( aicen(i,2:) )
-        end if        
-        end if        
+        end if
+        end if
      end if
 
      ! SEA-ICE THICKNESS
      !------------------
-     if (DO_HICE_ANA) then   
+     if (DO_HICE_ANA) then
      if(i==targt) then
          print*, 'lon, lat: ', oraster%lons(i), oraster%lats(i)
          print*, 'before ana_hice aice0: ', aicen(i,1)
@@ -597,14 +597,14 @@ program anaice2rst
         sit_bkg = sum( vicen(i,:) )
         if (sit_bkg>0.0) then
            beta=real( (sit_ana(oraster%GIs(i), oraster%GJs(i))+tiny)/sit_bkg ,kind=real_kind)
-        else           
-           beta=1.0           
+        else
+           beta=1.0
         end if
         mass_incr = mass_incr + (beta-1.0)*oraster%areas(i)*rho_ice*sum( vicen(i,:) )   ! Update sea-ice mass increment
                                                                                         ! due to sea-ice thickness analysis
 
         vicen(i,:)   = beta * vicen(i,:)            ! Readjust background volume
-        eicen(i,:,:) = beta * eicen(i,:,:)          ! and ice energy 
+        eicen(i,:,:) = beta * eicen(i,:,:)          ! and ice energy
      if(i==targt) then
          print*, 'lon, lat: ', oraster%lons(i), oraster%lats(i)
          print*, 'after ana_hice aice0: ', aicen(i,1)
@@ -615,19 +615,19 @@ program anaice2rst
 
      ! SNOW DEPTH
      !-----------
-     if (DO_HSNO_ANA) then   
+     if (DO_HSNO_ANA) then
         snd_bkg = sum( vsnon(i,:) )
         if (snd_bkg>0.0) then
            beta=real( (snd_ana(oraster%GIs(i), oraster%GJs(i))+tiny)/snd_bkg ,kind=real_kind)
-        else           
-           beta=1.0           
+        else
+           beta=1.0
         end if
 
         mass_incr = mass_incr + (beta-1.0)*oraster%areas(i)*rho_sno*sum( vsnon(i,:) )   ! Update sea-ice mass increment
                                                                                         ! due to sea-ice thickness analysis
 
         vsnon(i,:)   = beta * vsnon(i,:)            ! Readjust background snow volume
-        esnon(i,:,:) = beta * esnon(i,:,:)          ! and snow energy 
+        esnon(i,:,:) = beta * esnon(i,:,:)          ! and snow energy
      end if
   enddo
 
@@ -636,27 +636,27 @@ program anaice2rst
 
   do j=1,ogrid%Ny
   do i=1,ogrid%Nx
-     if(madjiceij(i,j) /= 0.0) then 
+     if(madjiceij(i,j) /= 0.0) then
         Tocean(i,j,1) = Toij(i,j)/madjiceij(i,j) - 273.15 !
      endif
-  enddo 
+  enddo
   enddo
 
-  endif 
+  endif
 
   mass2 = 0.0
   do i=1,oraster%Ntiles
-      if(SLMASK(i,1) < 0.5) then ! only count MOM tiles 
+      if(SLMASK(i,1) < 0.5) then ! only count MOM tiles
         mass2 = mass2 + oraster%areas(i)*(rho_ice*sum(vicen(i,:))+rho_sno*sum(vsnon(i,:)))
-      endif   
-  enddo 
-  
+      endif
+  enddo
+
   !allocate(tmpx(oraster%Ntiles))
   !tmpx = sum(aicen(:,2:), dim=2)
   !tilemax = maxloc(tmpx,dim=1)
   !print*, 'max at tile: ', tilemax
   !do n=1,ncat
-  !  print*, aicen(tilemax,n+1), vicen(tilemax,n) 
+  !  print*, aicen(tilemax,n+1), vicen(tilemax,n)
   !enddo
   !do i=1,oraster%Ntiles
   !  if(abs(oraster%lons(i)) < 0.5 .and.  abs(oraster%lats(i)-(-60.0)) < 0.5) then
@@ -666,10 +666,10 @@ program anaice2rst
   !deallocate(tmpx)
 
  ! if(DO_ALL_1ST) then
-     print *, 'before mass : ', mass1 
+     print *, 'before mass : ', mass1
      print *, 'after  mass : ', mass2
      print *,'Sea-ice mass increment = ',mass2-mass1,' kg'
-     mass_incr = mass2-mass1  
+     mass_incr = mass2-mass1
  ! else
  !    print *,'Sea-ice mass increment = ',mass_incr,' kg'
      print *,'Sea-ice mass increment/m^2 = ',mass_incr/(sum(ogrid%wet*ogrid%area)),' kg/m2'
@@ -724,7 +724,7 @@ program anaice2rst
   varname = 'ERGSNO'
   call check(nf90_inq_varid(fid_in, varname, varid))
   call check(nf90_put_var(fid_in, varid, esnon))
-  call check(nf90_close(fid_in))  
+  call check(nf90_close(fid_in))
 
 
   !SAVE TILE LOCATION
@@ -735,9 +735,9 @@ program anaice2rst
   call check( nf90_def_dim(ncid, "ntiles", oraster%Ntiles, tile_dimid) )
   dimids1d =  (/ tile_dimid /)
 
-  varname = 'lon'  
+  varname = 'lon'
   call check( nf90_def_var(ncid, varname, NF90_REAL, dimids1d, varidlon) )
-  varname = 'lat'  
+  varname = 'lat'
   call check( nf90_def_var(ncid, varname, NF90_REAL, dimids1d, varidlat) )
   call check( nf90_enddef(ncid) )
 
@@ -746,12 +746,12 @@ program anaice2rst
   call check( nf90_put_var(ncid, varidlon, oraster%lons) )
 
   varname = 'lat'
-  call check( nf90_inq_varid(ncid,varname,varidlat) )   
+  call check( nf90_inq_varid(ncid,varname,varidlat) )
   call check( nf90_put_var(ncid, varidlat, oraster%lats) )
 
   call check( nf90_close(ncid) )
-  
-  ! deallocate stuff here ... 
+
+  ! deallocate stuff here ...
   if(allocated(sic_ana)) deallocate(sic_ana)
   if(allocated(sit_ana)) deallocate(sit_ana)
   if(allocated(snd_ana)) deallocate(snd_ana)
@@ -767,18 +767,18 @@ program anaice2rst
   if(allocated(eicen)) deallocate(eicen)
   if(allocated(esnon)) deallocate(esnon)
 
-  if(allocated(DUMVAR)) deallocate(DUMVAR) 
+  if(allocated(DUMVAR)) deallocate(DUMVAR)
 
 contains
      subroutine save_old_state(aicen,vicen,vsnon,eicen,esnon, &
                                nilyr, nslyr, ia, ib, &
-                                hi, hs, qins, qsns)  
+                                hi, hs, qins, qsns)
 
   real*8, dimension(:),   intent(in)  :: aicen, vicen, vsnon
   real*8, dimension(:,:), intent(in)  :: eicen, esnon
   integer*4,              intent(in)  :: nilyr, nslyr, ia, ib
   real*8,                 intent(out) :: hi, hs
-  real*8, dimension(:),   intent(out) :: qins, qsns 
+  real*8, dimension(:),   intent(out) :: qins, qsns
 
   integer*4                           :: k
 
@@ -805,7 +805,7 @@ contains
 
     subroutine restore_ice_state(aicen,vicen,vsnon,eicen,esnon, &
                                 nilyr, nslyr, ia, ib, sic_incr, &
-                                hi, hs, qins, qsns, himin)  
+                                hi, hs, qins, qsns, himin)
 
   real*8, dimension(:),   intent(inout) :: aicen
   real*8, dimension(:),   intent(out)  :: vicen, vsnon
@@ -813,13 +813,13 @@ contains
   integer*4,              intent(in)  :: nilyr, nslyr, ia, ib
   real*8,                 intent(in) :: sic_incr
   real*8,                 intent(in) :: hi, hs
-  real*8, dimension(:),   intent(in) :: qins, qsns 
+  real*8, dimension(:),   intent(in) :: qins, qsns
   real*4, intent(in), optional       :: himin
 
   integer*4                           :: k
 
-     if(present(himin)) then 
-      if(hi >= himin) then 
+     if(present(himin)) then
+      if(hi >= himin) then
          aicen(ia) = aicen(ia) + sic_incr
          vicen(ib) = aicen(ia) * hi
       else
@@ -829,7 +829,7 @@ contains
      else
        aicen(ia) = aicen(ia) + sic_incr
        vicen(ib) = aicen(ia) * hi
-     endif    
+     endif
        vsnon(ib) = aicen(ia) * hs
        do k=1,nilyr
             eicen(k,ib)                          &
