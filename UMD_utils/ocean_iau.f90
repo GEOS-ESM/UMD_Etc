@@ -7,7 +7,7 @@ program mk_iau_increments
 !!$ *        -DO_SPONGE dt_restore_sst        : nudge to sst with restoring time scale hh hours
 !!$ *
 !!$ * INPUT FILES:
-!!$ *        MOM's namelist      : input.nml  
+!!$ *        MOM's namelist      : input.nml
 !!$ *        Model's native grid : grid_spec.nc
 !!$ *        Background          : ocean_temp_salt.res.nc
 !!$ *        Analysis            : ANA-ocean_temp_salt.res.nc
@@ -31,21 +31,21 @@ program mk_iau_increments
 
   character*128 :: varname
 
-  real*4, allocatable, dimension(:,  :, :) ::   Tb, Sb         ! Background Temp, Salt 
+  real*4, allocatable, dimension(:,  :, :) ::   Tb, Sb         ! Background Temp, Salt
   real*4, allocatable, dimension(:,  :, :) ::   Ta, Sa         ! Analysis Temp, Salt
   real*4, allocatable, dimension(:,  :, :) ::   Tincr, Sincr   ! Increment Temp, Salt
   type (ModelGrid)                         :: ogrid            ! Ocean grid
 
-  real*4    :: Sincr_max = 5.0 ! Max absolute value for the salinity increment  
-  real*4    :: Tincr_max = 5.0 ! Max absolute value for the temperature increment  
+  real*4    :: Sincr_max = 5.0 ! Max absolute value for the salinity increment
+  real*4    :: Tincr_max = 5.0 ! Max absolute value for the temperature increment
   real*4    :: mass_incr       ! Mass increment from sea-ice assimilation
-  
+
 
   logical       :: DO_ANA_INCR = .false.
   logical       :: DO_MASS_INCR = .false.
   logical       :: DO_SPONGE = .false.
   real*4        :: dt_restore_sst
-  integer       :: Nargs, arg_index
+  integer       :: Nargs, arg_index, iargc
   character*300 :: arg1, arg2
 
   !PROCESS COMMAND LINE
@@ -103,7 +103,7 @@ program mk_iau_increments
      allocate(Sincr(ogrid%Nx, ogrid%Ny, ogrid%Nz))
 
      Tincr = Ta - Tb
-     Tincr = Tincr_max * tanh( Tincr/Tincr_max ) 
+     Tincr = Tincr_max * tanh( Tincr/Tincr_max )
 
      Sincr = Sa - Sb
      Sincr = Sincr_max * tanh( Sincr/Sincr_max )
@@ -111,8 +111,8 @@ program mk_iau_increments
      print *,'Saving temp-salt increment restart'
      outfile='temp_increment.nc'
      varname='temp'
-     call write_mom_increment(outfile, varname, Tincr, ogrid)  
-     
+     call write_mom_increment(outfile, varname, Tincr, ogrid)
+
      outfile='salt_increment.nc'
      varname='salt'
      call write_mom_increment(outfile, varname, Sincr, ogrid)
@@ -129,7 +129,7 @@ program mk_iau_increments
      print *,'Saving temp_salt sponge'
      outfile='temp_salt_sponge.nc'
      varname='temp'
-     call write_mom_sponge(outfile, varname, ogrid, dt_restore_sst)  
+     call write_mom_sponge(outfile, varname, ogrid, dt_restore_sst)
   end if
 
 end program mk_iau_increments

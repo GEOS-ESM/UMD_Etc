@@ -30,7 +30,7 @@ MODULE common_mom4
   REAL(r_size),SAVE :: fcori(nlat)
   REAL(r_size),SAVE :: wet(nlon,nlat)                !(OCEAN)
   REAL(r_size),SAVE :: area_t(nlon,nlat)             !(OCEAN)
-  CHARACTER(4),SAVE :: element(nv3d+nv2d+nv4d)
+  CHARACTER(4),SAVE :: element(nv3d+nv2d+nv4d+11)
   INTEGER, DIMENSION(nlon,nlat), SAVE     :: kmt=-1  !(OCEAN) STEVE: the bottom topography for mom4
   !STEVE: for Custom Localization
   INTEGER :: nobids(nij0*nlev)                       !(OCEAN)
@@ -57,7 +57,7 @@ MODULE common_mom4
   REAL(r_size) :: zb(nlev)
   REAL(r_size) :: dz(nlev)
 
-! sfc fluxes: 
+! sfc fluxes:
 ! taux: zonal surface stress
 ! tauy: meridional surface stress
 ! tflux: temperature flux
@@ -66,7 +66,7 @@ MODULE common_mom4
 ! v10: 10-meter meridional surface wind velocity
 ! t2m: 2 meter height temperature
 ! q2m: 2 meter height relative humidity
-! prate: precipitation rate 
+! prate: precipitation rate
 ! pres: mean sea level pressure
 ! dlw: downward longwave radiation
 ! dsw: downward shortwave radiation
@@ -158,7 +158,7 @@ SUBROUTINE set_common_mom4
     ELSE
       WRITE(6,*) "The file does not exist: ", SSHclm_file
       WRITE(6,*) "Exiting common_mom4.f90..."
-      !STOP 1 
+      !STOP 1
     ENDIF
   endif
 
@@ -169,9 +169,9 @@ SUBROUTINE set_common_mom4
 !STEVE: GOAL: to utilize all netcdf grid data to completely define the grid and all grid-dependent operations
   INQUIRE(FILE=trim(gridfile),EXIST=ex)
   IF(.not. ex) THEN
-    WRITE(6,*) "The file does not exist: ", gridfile 
+    WRITE(6,*) "The file does not exist: ", gridfile
     WRITE(6,*) "Exiting common_mom4.f90..."
-    STOP 2 
+    STOP 2
   ENDIF
   WRITE(6,'(A)') '  >> accessing file: ', gridfile
   call check( NF90_OPEN(gridfile,NF90_NOWRITE,ncid) )
@@ -203,11 +203,11 @@ SUBROUTINE set_common_mom4
   call check( NF90_GET_VAR(ncid,varid,lat2d) )
 
   call check( NF90_INQ_VARID(ncid,'ds_01_21_T',varid) )    ! width of T_cell (meters)
-  call check( NF90_GET_VAR(ncid,varid,dx) ) 
+  call check( NF90_GET_VAR(ncid,varid,dx) )
   call check( NF90_INQ_VARID(ncid,'ds_10_12_T',varid) )    ! height of T_cell (meters)
-  call check( NF90_GET_VAR(ncid,varid,dy) ) 
+  call check( NF90_GET_VAR(ncid,varid,dy) )
   call check( NF90_INQ_VARID(ncid,'area_T',varid) )        ! area of T_cell
-  call check( NF90_GET_VAR(ncid,varid,area_t) ) 
+  call check( NF90_GET_VAR(ncid,varid,area_t) )
   WRITE(6,*) "common_mom4:: grid_spec.nc MIN(dx) = ", MINVAL(dx)
   WRITE(6,*) "common_mom4:: grid_spec.nc MAX(dx) = ", MAXVAL(dx)
   WRITE(6,*) "common_mom4:: grid_spec.nc MIN(dy) = ", MINVAL(dy)
@@ -273,7 +273,7 @@ END SUBROUTINE set_common_mom4
 !-----------------------------------------------------------------------
 SUBROUTINE read_etaclm(SSHclm_file,SSHclm_m)
 !===============================================================================
-! Read in the model mean climatology (e.g. 1991-1999), the real climatology 
+! Read in the model mean climatology (e.g. 1991-1999), the real climatology
 ! assumed to be subtracted already from the observation data.
 !===============================================================================
   USE netcdf
@@ -378,7 +378,7 @@ SUBROUTINE read_grd4(infile,v3d,v2d,precision)
 !!$     call check( NF90_OPEN(sffile,NF90_NOWRITE,ncid) )
 !!$     IF(istat /= NF90_NOERR) THEN
 !!$        WRITE(6,'(A)') 'netCDF OPEN ERROR in read_grd4 for ',sffile
-!!$        STOP 8 
+!!$        STOP 8
 !!$     END IF
 !!$     WRITE(6,*) "read_grd4:: just opened file ", sffile
 !!$
@@ -589,7 +589,7 @@ SUBROUTINE check(status)
   USE netcdf
   IMPLICIT NONE
   integer, intent (in) :: status
-  if(status /= nf90_noerr) then 
+  if(status /= nf90_noerr) then
     print *, trim(nf90_strerror(status))
     stop "Stopped"
   end if
@@ -677,7 +677,7 @@ SUBROUTINE write_grd4(outfile,v3d_in,v2d_in)
 !!$!         v3d(i,j,k,iv3d_v) = 0.0 !NF90_FILL_FLOAT
 !!$!       endif
 !!$
-!!$!       if (k .eq. 1 .and. kmt(i,j) .eq. 0) then 
+!!$!       if (k .eq. 1 .and. kmt(i,j) .eq. 0) then
 !!$!         if (v2d(i,j,iv2d_sst) .ne. 0.0 ) v2d(i,j,iv2d_sst) = 0.0 !NF90_FILL_FLOAT
 !!$!         if (v2d(i,j,iv2d_sss) .ne. 0.0 ) v2d(i,j,iv2d_sss) = 0.0 !NF90_FILL_FLOAT
 !!$!         if (v2d(i,j,iv2d_ssh) .ne. 0.0 ) v2d(i,j,iv2d_ssh) = 0.0 !NF90_FILL_FLOAT
@@ -730,7 +730,7 @@ SUBROUTINE write_grd4(outfile,v3d_in,v2d_in)
   !STEVE: for debugging
   !if (.false.) then
 
-  
+
   do m=1,nv3d
      do k=1,nlev
         do j=1,nlat
@@ -739,7 +739,7 @@ SUBROUTINE write_grd4(outfile,v3d_in,v2d_in)
               if ( isnan( v3d(i,j,k,m) ) ) then
                  if ( wet(i,j).eq.0.0 ) then
                     v3d(i,j,k,m) = 0.0
-                    v2d(i,j,:) = 0.0                    
+                    v2d(i,j,:) = 0.0
                  else
                     WRITE(6,*) "common_mom4.f90::write_grd4:: ERROR: found NaN..."
                     WRITE(6,*) "v3d(i,j,k,m) contains NaN. i,j,k,m = ", i,j,k,m
@@ -787,7 +787,7 @@ SUBROUTINE write_grd4(outfile,v3d_in,v2d_in)
   !!! sfc file
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!$  call check( NF90_OPEN(sffile,NF90_WRITE,ncid) )
-!!$  
+!!$
 !!$  !!! SST
 !!$  call check( NF90_INQ_VARID(ncid,'t_surf',varid) )
 !!$  WHERE (kmt(:,:) .ge. 1) v2d(:,:,iv2d_sst) = v2d(:,:,iv2d_sst) + t0c ! kelvin

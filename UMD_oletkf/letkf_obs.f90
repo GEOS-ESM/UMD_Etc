@@ -1,7 +1,7 @@
 MODULE letkf_obs
 !===============================================================================
 ! MODULE: letkf_obs
-! 
+!
 ! USES:
 !   use common
 !   use common_mpi
@@ -16,20 +16,20 @@ MODULE letkf_obs
 !                 [save]
 !
 !                 <type declaration>
-!     
+!
 ! !PUBLIC MEMBER FUNCTIONS:
-!           <function>                     ! Description      
+!           <function>                     ! Description
 !
 ! !PUBLIC DATA MEMBERS:
 !           <type> :: <variable>           ! Variable description
 !
-! DESCRIPTION: 
+! DESCRIPTION:
 !   This module reads all observation data and stores in appropriate data structures
 !
 ! !REVISION HISTORY:
 !   04/26/2011 Steve PENNY converted to OCEAN for use with MOM4
 !   01/23/2009 Takemasa MIYOSHI  created
-! 
+!
 !-------------------------------------------------------------------------------
 ! $Author$
 !===============================================================================
@@ -58,7 +58,7 @@ MODULE letkf_obs
                                      ! Solution was to populate a SST model field (v2d) with surface temp data from the model (v3d(:,:,1))
   INTEGER :: cnt_obs_u, cnt_obs_v, cnt_obs_t, cnt_obs_s, cnt_obs_x, cnt_obs_y, cnt_obs_z, cnt_obs_ssh, cnt_obs_eta, cnt_obs_sst, cnt_obs_sss
   integer :: cnt_obs_aice, cnt_obs_hice
-  INTEGER, DIMENSION(nv3d+nv2d), SAVE :: cnt_obs = 0
+  INTEGER, DIMENSION(nv3d+nv2d+2), SAVE :: cnt_obs = 0
   !STEVE: for debugging observation culling:
   INTEGER :: cnt_yout=0, cnt_xout=0, cnt_zout=0, cnt_triout=0
   INTEGER :: cnt_rigtnlon=0, cnt_nearland=0
@@ -107,7 +107,7 @@ CONTAINS
     CHARACTER(12) :: obsfile='obsTTNNN.dat'
 
     !STEVE: for adaptive observation error:
-    REAL(r_size) :: tmpoerr 
+    REAL(r_size) :: tmpoerr
     !STEVE: to adjust writing to output file
     LOGICAL :: verbose = .false.
     LOGICAL :: dodebug = .true.
@@ -115,7 +115,7 @@ CONTAINS
     REAL(r_size) :: hdx2,mstd
     INTEGER :: gross_cnt,gross_2x_cnt
     !STEVE: for DO_ALTIMETRY
-    REAL(r_size) :: SSH_CLM_m 
+    REAL(r_size) :: SSH_CLM_m
     real(r_size) :: offset, cnt_adt   ! ALTIMETER OFFSET
 
     type(ObsStatus), intent(in) :: obs_status
@@ -244,22 +244,22 @@ CONTAINS
 !!$    n=1
 !!$    WRITE(6,*) "For n=1,"
 !!$    WRITE(6,*) "MINVAL(tmpqc0(n,:)) = ",MINVAL(tmpqc0(n,:))
-!!$    WRITE(6,*) "tmpelm(n) = ", tmpelm(n) 
-!!$    WRITE(6,*) "tmplon(n) = ", tmplon(n) 
-!!$    WRITE(6,*) "tmplat(n) = ", tmplat(n) 
-!!$    WRITE(6,*) "tmplev(n) = ", tmplev(n) 
-!!$    WRITE(6,*) "tmpdat(n) = ", tmpdat(n) 
-!!$    WRITE(6,*) "tmperr(n) = ", tmperr(n) 
+!!$    WRITE(6,*) "tmpelm(n) = ", tmpelm(n)
+!!$    WRITE(6,*) "tmplon(n) = ", tmplon(n)
+!!$    WRITE(6,*) "tmplat(n) = ", tmplat(n)
+!!$    WRITE(6,*) "tmplev(n) = ", tmplev(n)
+!!$    WRITE(6,*) "tmpdat(n) = ", tmpdat(n)
+!!$    WRITE(6,*) "tmperr(n) = ", tmperr(n)
 !!$    WRITE(6,*)
 !!$    n=nobs
 !!$    WRITE(6,*) "For n=nobs=",nobs
 !!$    WRITE(6,*) "MINVAL(tmpqc0(n,:)) = ",MINVAL(tmpqc0(n,:))
-!!$    WRITE(6,*) "tmpelm(n) = ", tmpelm(n) 
-!!$    WRITE(6,*) "tmplon(n) = ", tmplon(n) 
-!!$    WRITE(6,*) "tmplat(n) = ", tmplat(n) 
-!!$    WRITE(6,*) "tmplev(n) = ", tmplev(n) 
-!!$    WRITE(6,*) "tmpdat(n) = ", tmpdat(n) 
-!!$    WRITE(6,*) "tmperr(n) = ", tmperr(n) 
+!!$    WRITE(6,*) "tmpelm(n) = ", tmpelm(n)
+!!$    WRITE(6,*) "tmplon(n) = ", tmplon(n)
+!!$    WRITE(6,*) "tmplat(n) = ", tmplat(n)
+!!$    WRITE(6,*) "tmplev(n) = ", tmplev(n)
+!!$    WRITE(6,*) "tmpdat(n) = ", tmpdat(n)
+!!$    WRITE(6,*) "tmperr(n) = ", tmperr(n)
 !!$    WRITE(6,*) "STEVE: END DEBUGGING."
 !!$    WRITE(6,*)
 
@@ -281,7 +281,7 @@ CONTAINS
     gross_cnt = 0
     gross_2x_cnt = 0
 
-    WRITE(6,*) "Processing tmphdxf for n=1 to n=nobs=",nobs 
+    WRITE(6,*) "Processing tmphdxf for n=1 to n=nobs=",nobs
     WRITE(6,*) "and filtering bad observations..."
 
     offset = 0.0
@@ -301,7 +301,7 @@ CONTAINS
        tmpdep(n) = tmpdat(n) - tmpdep(n) ! y-Hx
 
        select case(nint(tmpelm(n)))
-       case(id_u_obs)               
+       case(id_u_obs)
           if (abs(tmpdep(n))>50.0) tmpqc(n) = 0
 
        case(id_t_obs)                       ! QC T for omf>10 degC
@@ -310,15 +310,15 @@ CONTAINS
 
        case(id_sst_obs)                     ! QC SST for omf>10 degC
           if (abs(tmpdep(n))>50.0) tmpqc(n) = 0
-          if (.not. obs_status%SST) tmpqc(n) = 0             
+          if (.not. obs_status%SST) tmpqc(n) = 0
 
        case(id_s_obs)                       !QC S for omf>10 psu
           if (abs(tmpdep(n))>10.0) tmpqc(n) = 0
-          if (.not. obs_status%Sprof) tmpqc(n) = 0             
+          if (.not. obs_status%Sprof) tmpqc(n) = 0
 
        case(id_sss_obs)                     ! QC SSS for omf>10 psu
           if (abs(tmpdep(n))>10.0) tmpqc(n) = 0
-          if (.not. obs_status%SSS) tmpqc(n) = 0             
+          if (.not. obs_status%SSS) tmpqc(n) = 0
 
        case(id_eta_obs)                     ! QC eta for omf>1 m
           if (abs(tmpdep(n))>1.0) then
@@ -327,22 +327,22 @@ CONTAINS
              offset=offset+tmpdep(n)
              cnt_adt=cnt_adt+1.0
           end if
-          if (.not. obs_status%ADT) tmpqc(n) = 0 
+          if (.not. obs_status%ADT) tmpqc(n) = 0
 
        case(id_ssh_obs)                    ! QC eta for omf>1 m
           if (abs(tmpdep(n))>1.0) tmpqc(n) = 0
 
-       case(id_aice_obs) 
+       case(id_aice_obs)
           if (abs(tmpdep(n))>1.0) tmpqc(n) = 0
           !tmperr(n) = 0.02
           if (obs_status%AICE .eqv. .false.) tmpqc(n) = 0
-          
+
        case(id_hice_obs)
           tmpqc(n) = 0
           !if (mod(n,10).eq.0) tmpqc(n) = 1   !poor man's subsampling
           if (abs(tmpdep(n))>5.0) tmpqc(n) = 0
-          if (.not. obs_status%HICE) tmpqc(n) = 0             
-          
+          if (.not. obs_status%HICE) tmpqc(n) = 0
+
        end select
 
        !STEVE: as a check, count the number of each type of observation
@@ -654,7 +654,7 @@ hdxa = 0.0d0
 
 !   WRITE(6,*) "letkf_tools.f90::adapt_obserr: calling get_hdxa..."
 !   CALL get_hdxa(v3d,v2d,hdxa(:,im),obsdep_a)
-!     
+!
 !   l = l+1
 ! enddo
 
@@ -663,7 +663,7 @@ WRITE(6,*) "myrank+1,nobs,nprocs = ", myrank+1,nobs,nprocs
 obsper = CEILING(REAL(nobs)/REAL(nprocs))
 if (myrank + 1 .lt. nprocs)  then
   start = myrank*obsper+1
-  finish = (myrank+1)*obsper 
+  finish = (myrank+1)*obsper
 else
   start = myrank*obsper+1
   finish = nobs
@@ -675,9 +675,9 @@ if (dodebug) prntmod = NINT(obsper/2.0)
 
 ! Process all obs allocated to this processor
 do n=start,finish
-  if (MOD(n,prntmod) .eq. 0) WRITE(6,*) "n = ", n 
+  if (MOD(n,prntmod) .eq. 0) WRITE(6,*) "n = ", n
   ! interpolation
-  if (MOD(n,prntmod) .eq. 0) WRITE(6,*) "Calling phys2ijk..."  
+  if (MOD(n,prntmod) .eq. 0) WRITE(6,*) "Calling phys2ijk..."
   !if (obslat(n)<65.0) then
   if (obslat(n)<=90.0) then
      CALL phys2ijk(obselm(n),obslon(n),obslat(n),obslev(n),ri,rj,rk)
